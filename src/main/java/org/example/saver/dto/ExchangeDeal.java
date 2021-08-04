@@ -8,8 +8,7 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.experimental.Accessors;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,13 +23,16 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Accessors(chain = true)
 @Entity
-@Table(name = "EXCHANGE_DEALS")
+@Table(name = "exchange_deals")
 public class ExchangeDeal {
 
     /**
      * Guid сделки
      */
+    @Id
     private UUID guid;
+
+    private String tradeNum;
 
     /**
      * Guid cчета
@@ -45,6 +47,7 @@ public class ExchangeDeal {
     /**
      * Направление сделки
      */
+    @Enumerated(EnumType.STRING)
     private DealDirection direction;
 
     /**

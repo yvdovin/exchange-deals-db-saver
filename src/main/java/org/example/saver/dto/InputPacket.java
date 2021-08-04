@@ -2,11 +2,13 @@ package org.example.saver.dto;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class InputPacket {
-    private ExchangeDealsPacket exchangeDealsPacket;
-    private OperationsPacket operationsPacket;
+    private ExchangeDealsInputPacket exchangeDealsInputPacket;
+    private OperationsOutputPacket operationsOutputPacket;
     private MetaDataPacket metaDataPacket;
 }

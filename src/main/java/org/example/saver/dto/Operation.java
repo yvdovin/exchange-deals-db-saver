@@ -7,6 +7,7 @@ import lombok.ToString;
 import lombok.experimental.Accessors;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -21,8 +22,11 @@ import java.util.UUID;
 @Accessors(chain = true)
 @ToString
 @Entity
-@Table(name = "OPERATIONS")
+@Table(name = "operations")
 public class Operation {
+
+    @Id
+    private UUID guid;
 
     /**
      * Guid cчета
