@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.example.saver.dto.*;
+import org.example.saver.repo.AccountsRepository;
 import org.example.saver.repo.ExchangeDealsRepository;
 import org.example.saver.repo.OffsetDataRepository;
 import org.example.saver.repo.OperationsRepository;
@@ -35,6 +36,9 @@ public class Worker {
     OffsetDataRepository offsetDataRepository;
 
     @Autowired
+    AccountsRepository accountsRepository;
+
+    @Autowired
     Consumer<String, String> consumer;
 
     @Autowired
@@ -50,19 +54,27 @@ public class Worker {
             List<ExchangeDeal> exchangeDeals = new ArrayList<>();
             List<Operation> operations = new ArrayList<>();
             List<MetaDataPacket> metaDataPackets = new ArrayList<>();
+            List<Account> masterAccounts = new ArrayList<>();
             records.forEach(record -> {
                 try {
                     InputPacket inputPacket = objectMapper.readValue(record.value(), InputPacket.class);
                     exchangeDeals.addAll(inputPacket.getExchangeDealsInputPacket().getExchangeDeals());
                     operations.addAll(inputPacket.getOperationsOutputPacket().getOperations());
                     metaDataPackets.add(inputPacket.getMetaDataPacket());
+                    if ("master".equals(inputPacket.getMetaDataPacket().getServiceName())) {
+                        exchangeDeals.stream()
+                                .map(ExchangeDeal::getAccountGuid)
+                                .forEach(t -> masterAccounts.add(new Account()
+                                        .setAccountGuid(t)
+                                        .setShardName("master")));
+                    }
                     System.out.println(inputPacket);
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
             });
 
-            saveIntoDB(exchangeDeals, operations, filterOffsetData(metaDataPackets));
+            saveIntoDB(exchangeDeals, operations, filterOffsetData(metaDataPackets), masterAccounts);
             consumer.commitSync();
         }
     }
@@ -70,13 +82,14 @@ public class Worker {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
-    private void saveIntoDB(List<ExchangeDeal> exchangeDeals, List<Operation> operations, List<OffsetData> offsetDataList) {
+    private void saveIntoDB(List<ExchangeDeal> exchangeDeals, List<Operation> operations, List<OffsetData> offsetDataList, List<Account> masterAccounts) {
         transactionTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus transactionStatus) {
                 exchangeDealsRepository.saveAll(exchangeDeals);
                 operationsRepository.saveAll(operations);
                 offsetDataRepository.saveAll(offsetDataList);
+                accountsRepository.saveAll(masterAccounts);
             }
         });
     }
